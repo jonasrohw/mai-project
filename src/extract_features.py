@@ -107,6 +107,7 @@ def load_dataset(data_path, data_name):
                 
     return data
 
+# WHY WOULD YOU HARD CODE??
 
 def extract_encoder_features(data_path, 
                              images_path, 
@@ -117,7 +118,7 @@ def extract_encoder_features(data_path,
                              choose_encoder_version = "ViT-L/14", 
                              choose_gpu = 0,
                              batch_size = 100,
-                             num_workders = 16,
+                             num_workders = 12,
                              shuffle = False
                             ):
                
