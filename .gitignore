@@ -27,6 +27,7 @@ share/python-wheels/
 MANIFEST
 
 data/news_clippings/**
+!data/news_clippings
 data/VERITE/**
 data/VisualNews/origin/**
 
