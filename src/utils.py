@@ -117,7 +117,22 @@ def load_negative_evidence(input_data, dataset_name, encoder, encoder_version, s
     return input_data
 
 class DatasetIterator_negative_Evidence(torch.utils.data.Dataset):
-    
+    """
+    A custom dataset class for handling datasets with visual and textual features,
+    including positive and negative evidence for a given input data.
+
+    Attributes:
+        input_data (pd.DataFrame): The input data containing image and text IDs and other information.
+        visual_features (pd.DataFrame): The visual features corresponding to the image IDs.
+        textual_features (pd.DataFrame): The textual features corresponding to the text IDs.
+        X_visual_features (pd.DataFrame): Additional visual features for evidence items.
+        X_textual_features (pd.DataFrame): Additional textual features for evidence items.
+        use_evidence (int): The number of positive evidence items to use.
+        use_evidence_neg (int): The number of negative evidence items to use.
+        random_permute (bool): Whether to randomly permute the evidence items.
+        fuse_evidence (list): Methods for fusing evidence.
+    """
+
     def __init__(
         self,
         input_data,
@@ -130,6 +145,7 @@ class DatasetIterator_negative_Evidence(torch.utils.data.Dataset):
         random_permute,
         fuse_evidence=[False]
     ):
+        # Initialize the dataset with the provided data and settings
         self.input_data = input_data
         self.visual_features = visual_features
         self.textual_features = textual_features
@@ -141,25 +157,31 @@ class DatasetIterator_negative_Evidence(torch.utils.data.Dataset):
         self.fuse_evidence = fuse_evidence
         
     def __len__(self):
+        # Return the length of the dataset
         return self.input_data.shape[0]
         
     def __getitem__(self, idx):
+        # Get the item at the given index
         current = self.input_data.iloc[idx]
         
+        # Extract visual and textual features for the current item
         img = self.visual_features[current.image_id].values
         txt = self.textual_features[current.id].values
         
+        # Get the label indicating if the current item is falsified
         label = float(current.falsified)
                 
         if self.use_evidence == 0:
+            # If no evidence is used, return the image, text, label, and placeholders for evidence
             return img, txt, label, np.nan, np.nan
         
+        # Extract positive evidence features
         X_img = self.X_visual_features[current.img_ranked_items[:self.use_evidence]].T.values
         X_txt = self.X_textual_features[current.txt_ranked_items[:self.use_evidence]].T.values
                 
         if self.use_evidence_neg > 0:
-            
-            total_items = 2*self.use_evidence + 2*self.use_evidence_neg
+            # If negative evidence is used, prepare additional negative evidence features
+            total_items = 2 * self.use_evidence + 2 * self.use_evidence_neg
             available_X_img_neg = len(current.negative_images[:self.use_evidence_neg])
             available_X_txt_neg = len(current.negative_texts[:self.use_evidence_neg])
             
@@ -172,13 +194,13 @@ class DatasetIterator_negative_Evidence(torch.utils.data.Dataset):
             extra_random_imgs = [] 
 
             if negatives_to_add > 0:
-                max_images = max(0,len(current.negative_images) - self.use_evidence_neg)
-                max_texts = max(0,len(current.negative_texts) - self.use_evidence_neg)
+                max_images = max(0, len(current.negative_images) - self.use_evidence_neg)
+                max_texts = max(0, len(current.negative_texts) - self.use_evidence_neg)
 
-                if max_texts == 0 and max_images>=negatives_to_add:
+                if max_texts == 0 and max_images >= negatives_to_add:
                     how_many_neg_imgs = negatives_to_add
 
-                elif max_images == 0 and max_texts>=negatives_to_add:
+                elif max_images == 0 and max_texts >= negatives_to_add:
                     how_many_neg_txts = negatives_to_add
 
                 else:    
@@ -214,7 +236,7 @@ class DatasetIterator_negative_Evidence(torch.utils.data.Dataset):
                             selected_item = random.choice(valid_columns)                      
                             extra_random_txts.append(selected_item)
                                                                         
-                                
+            # Extract negative evidence features and concatenate with positive evidence
             X_img_neg_items = current.negative_images[:self.use_evidence_neg + how_many_neg_imgs] + extra_random_imgs            
             X_img_neg = self.X_visual_features[X_img_neg_items].T.values
         
@@ -227,16 +249,17 @@ class DatasetIterator_negative_Evidence(torch.utils.data.Dataset):
             X_all_labels = np.concatenate([pos_labels, neg_labels])
 
             if self.random_permute:
+                # Randomly permute the evidence items
                 random_indices = np.random.permutation(X_all.shape[0])
             else:
                 # Used for comparable evaluation
-                random_indices = [x for x in range(X_all.shape[0]-1, -1, -1)]
+                random_indices = [x for x in range(X_all.shape[0] - 1, -1, -1)]
                     
             X_all = X_all[random_indices]
             X_all_labels = X_all_labels[random_indices]
         
         else:
-                        
+            # If no negative evidence is used, pad positive evidence if needed and concatenate
             if X_img.shape[0] < self.use_evidence:            
                 pad_zeros = np.zeros((self.use_evidence - X_img.shape[0], self.X_visual_features.shape[0]))
                 X_img = np.vstack([X_img, pad_zeros])
@@ -248,6 +271,7 @@ class DatasetIterator_negative_Evidence(torch.utils.data.Dataset):
             X_all = np.concatenate([X_img, X_txt])
             X_all_labels = np.ones(X_img.shape[0] + X_txt.shape[0])
             
+        # Return the image, text, label, and combined evidence features and labels
         return img, txt, label, X_all.astype("float32"), X_all_labels.astype("float32")
     
 def prepare_dataloader_negative_Evidence(image_embeddings, text_embeddings, X_image_embeddings, X_text_embeddings, input_data, batch_size, use_evidence, use_evidence_neg, fuse_evidence, num_workers, shuffle, random_permute):
@@ -277,75 +301,115 @@ def prepare_dataloader_negative_Evidence(image_embeddings, text_embeddings, X_im
     
 
 def modality_fusion(fusion_method, mod_a, mod_b):
-    
+    """function for modality fusion between 2 modalities
+
+    Args:
+        fusion_method (List[str]): List of strings that describe the fusion technique
+        mod_a (Tensor)
+        mod_b (Tensor)
+
+    Returns:
+        Tensor: fused tensor
+    """
+    # Initialize the output variable 'x' with a list containing a single None element
     x = [None]
-                    
+    
+    # Check if the fusion method includes "concat_1"
     if "concat_1" in fusion_method:    
-        
+        # If mod_a has 2 dimensions, add an extra dimension
         if mod_a.dim() == 2:
             mod_a = mod_a.unsqueeze(1)
-            
+        
+        # If mod_b has 2 dimensions, add an extra dimension
         if mod_b.dim() == 2:
             mod_b = mod_b.unsqueeze(1)
         
+        # Concatenate mod_a and mod_b along the second axis (axis=1)
         x = torch.cat([mod_a, mod_b], axis=1)
-                    
+    
+    # Check if the fusion method includes "add"
     if 'add' in fusion_method:
-        
+        # Add mod_a and mod_b element-wise
         added = torch.add(mod_a, mod_b)
+        # If x has more than one dimension, concatenate x and added along the second axis
+        # Otherwise, set x to added
         x = torch.cat([x, added], axis=1) if x.dim() > 1 else added
-        
+    
+    # Check if the fusion method includes "mul"
     if 'mul' in fusion_method:
-        
+        # Multiply mod_a and mod_b element-wise
         mult = torch.mul(mod_a, mod_b)
+        # If x has more than one dimension, concatenate x and mult along the second axis
+        # Otherwise, set x to mult
         x = torch.cat([x, mult], axis=1) if x.dim() > 1 else mult
-        
+    
+    # Check if the fusion method includes "sub"
     if 'sub' in fusion_method:
-        
+        # Subtract mod_b from mod_a element-wise
         sub = torch.sub(mod_a, mod_b)
+        # If x has more than one dimension, concatenate x and sub along the second axis
+        # Otherwise, set x to sub
         x = torch.cat([x, sub], axis=1) if x.dim() > 1 else sub
-                                          
+    
+    # Return the resulting tensor 'x'
     return x
 
-def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None):
-    
-    if fusion_method:
-        x = modality_fusion(fusion_method, 
-                            mod_a=images, 
-                            mod_b=texts)
 
+def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None):
+    """Prepare input for model
+
+    Args:
+        fusion_method (List[str]): List of strings that describe fusion methods.
+        fuse_evidence (List[str]): List of fusion methods for evidences, is concat_1 if use_evidence > 0.
+        use_evidence (int): Number of evidences to use.
+        images (Tensor): Image tensor.
+        texts (Tensor): Text tensor.
+        X_images (Tensor): Additional visual evidence features. (Not used)
+        X_texts (Tensor): Additional textual evidence features. (Not used)
+        X_all (Tensor, optional): Pre-combined evidence features to be concatenated with the fusion result. Defaults to None.
+
+    Returns:
+        Tensor: The final fused tensor combining the primary inputs and evidence features.
+    """
+    # Check if a fusion method is specified
+    if fusion_method:
+        # Fuse the images and texts using the specified fusion method
+        x = modality_fusion(fusion_method, mod_a=images, mod_b=texts)
+    
+    # Check if evidence fusion should be used
     if use_evidence:
-        
-        if X_all != None:
-            
+        # If X_all is provided, concatenate it with the current fusion result
+        if X_all is not None:
             x = torch.cat([x, X_all], axis=1)
             return x
 
+        # If fuse_evidence contains more than one method
         if len(fuse_evidence) > 1:
-
+            # Fuse images with X_images using the specified evidence fusion method
             img2Ximg = modality_fusion(fuse_evidence, 
                                        images if images.dim() > 2 else images.unsqueeze(1), 
                                        X_images)
+            # Fuse texts with X_texts using the specified evidence fusion method
             txt2Xtxt = modality_fusion(fuse_evidence, 
-                                       texts if texts.dim() > 2  else texts.unsqueeze(1), 
-                                       X_texts)    
-
+                                       texts if texts.dim() > 2 else texts.unsqueeze(1), 
+                                       X_texts)
+            # If the evidence fusion method includes "concat_1", remove the first dimension
             if "concat_1" in fuse_evidence:
                 img2Ximg = img2Ximg[:, 1:, :]
-                txt2Xtxt = txt2Xtxt[:, 1:, :]    
-
+                txt2Xtxt = txt2Xtxt[:, 1:, :]
         else:
-            img2Ximg = X_images 
+            # If only one evidence fusion method is specified, directly use X_images and X_texts
+            img2Ximg = X_images
             txt2Xtxt = X_texts
 
+        # If a fusion method is specified, concatenate the current fusion result with the fused evidence
         if fusion_method:
-            x = torch.cat([x, img2Ximg, txt2Xtxt], axis=1)            
-
+            x = torch.cat([x, img2Ximg, txt2Xtxt], axis=1)
         else:
-            x = modality_fusion(fuse_evidence, 
-                                mod_a=X_images, 
-                                mod_b=X_texts)
-            
+            # If no fusion method is specified, fuse X_images and X_texts using the evidence fusion method
+            x = modality_fusion(fuse_evidence, mod_a=X_images, mod_b=X_texts)
+    
+    # Return the final fused result
     return x
 
 
