@@ -304,7 +304,7 @@ def modality_fusion(fusion_method, mod_a, mod_b):
     """function for modality fusion between 2 modalities
 
     Args:
-        fusion_method (List): List of strings that describe the fusion technique
+        fusion_method (List[str]): List of strings that describe the fusion technique
         mod_a (Tensor)
         mod_b (Tensor)
 
