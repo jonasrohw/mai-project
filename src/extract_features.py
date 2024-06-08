@@ -107,7 +107,6 @@ def load_dataset(data_path, data_name):
                 
     return data
 
-# WHY WOULD YOU HARD CODE??
 
 def extract_encoder_features(data_path, 
                              images_path, 

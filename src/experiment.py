@@ -31,16 +31,16 @@ def run_experiment(RED_DOT_version,
                    verite_path = '../data/VERITE/',
                    evidence_path='../data/news_clippings/',
                    encoder = 'CLIP',
-                   encoder_version = 'ViT-B/32',
+                   encoder_version = 'ViT-L/14',
                    choose_gpu = 0,
                    epochs=100,
                    seed_options = [0],
                    lr_options = [1e-4],
                    batch_size_options = [512],
                    choose_fusion_method = [["concat_1", "add", "sub", "mul"]],
-                   tf_layers_options = [4, 6],
-                   tf_head_options = [2, 8], 
-                   tf_dim_options = [128, 2048]
+                   tf_layers_options = [4],
+                   tf_head_options = [2], 
+                   tf_dim_options = [128]
                   ):
     
     if RED_DOT_version not in ["baseline", "single_stage", "single_stage_guided", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"]:
