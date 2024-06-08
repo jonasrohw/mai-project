@@ -27,9 +27,9 @@ def process_string(input_str):
 
 def fetch_evidence_split(evidence_path):
 
-    train_paths = pd.DataFrame(json.load(open(evidence_path + 'dataset_items_train.json'))).transpose()
-    valid_paths = pd.DataFrame(json.load(open(evidence_path + 'dataset_items_val.json'))).transpose()
-    test_paths = pd.DataFrame(json.load(open(evidence_path + 'dataset_items_test.json'))).transpose()
+    train_paths = pd.DataFrame(json.load(open(evidence_path + '/dataset_items_train.json'))).transpose()
+    valid_paths = pd.DataFrame(json.load(open(evidence_path + '/dataset_items_val.json'))).transpose()
+    test_paths = pd.DataFrame(json.load(open(evidence_path + '/dataset_items_test.json'))).transpose()
 
     train_paths = train_paths.reset_index().rename(columns={'index': 'match_index'})
     valid_paths = valid_paths.reset_index().rename(columns={'index': 'match_index'})

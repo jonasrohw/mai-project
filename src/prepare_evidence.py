@@ -42,7 +42,7 @@ def load_merge_evidence_data(evidence_path, data_path, data_name):
     test_merge.to_csv(data_path + 'news_clippings/merged_balanced_test.csv')
 
 
-def extract_features_for_evidence(data_path, output_path, data_name_X, encoder='CLIP', choose_encoder_version='ViT-B/32', choose_gpu=0, batch_size=256, num_workders=16, shuffle = False):
+def extract_features_for_evidence(data_path, output_path, data_name_X, encoder='CLIP', choose_encoder_version='ViT-L/14', choose_gpu=0, batch_size=256, num_workders=12, shuffle = False):
     
     os.environ["CUDA_VISIBLE_DEVICES"] = str(choose_gpu)
     encoder_version = choose_encoder_version.replace('-', '').replace('/', '')    
@@ -343,7 +343,7 @@ def prepare_negative_evidence(input_data, split_name, evidence_path, dataset_nam
         json.dump(all_negative_texts, file)
         
 
-def re_rank_evidence(data_path, data_name, data_name_X, output_path, encoder='CLIP', choose_encoder_version='ViT-B/32'):
+def re_rank_evidence(data_path, data_name, data_name_X, output_path, encoder='CLIP', choose_encoder_version='ViT-L/14'):
     print("Load data")
     vn_data = load_visual_news(data_path)
 
@@ -368,7 +368,7 @@ def re_rank_evidence(data_path, data_name, data_name_X, output_path, encoder='CL
     test_data.match_index = "test_" + test_data.match_index  
     
     encoder_version = choose_encoder_version.replace('-', '').replace('/', '')
-
+    print("coder" + encoder_version)
     X_image_embeddings = np.load(output_path + data_name_X + '_' + encoder.lower() + "_image_embeddings_" + encoder_version + ".npy")
     X_image_ids = np.load(output_path + data_name_X + "_image_ids_" + encoder_version +".npy")
     X_image_embeddings = pd.DataFrame(X_image_embeddings, index=X_image_ids).T
@@ -444,7 +444,7 @@ def re_rank_evidence(data_path, data_name, data_name_X, output_path, encoder='CL
     prepare_negative_evidence(valid_data, "valid", output_path, data_name, encoder, encoder_version)
     prepare_negative_evidence(test_data, "test", output_path, data_name, encoder, encoder_version)
     
-def re_rank_verite(data_path, data_name, output_path, encoder='CLIP', choose_encoder_version='ViT-B/32'):
+def re_rank_verite(data_path, data_name, output_path, encoder='CLIP', choose_encoder_version='ViT-L/14'):
     
     data = pd.read_csv(data_path + 'VERITE_with_evidence.csv', index_col=0)
     data['match_index'] = data.index.astype(str).tolist()            
@@ -458,13 +458,13 @@ def re_rank_verite(data_path, data_name, output_path, encoder='CLIP', choose_enc
     verite_image_embeddings = pd.DataFrame(verite_image_embeddings, index=[str(x) for x in range(1001)]).T
     verite_text_embeddings = pd.DataFrame(verite_text_embeddings, index=[str(x) for x in range(1001)]).T
     
-    X_image_embeddings = np.load(output_path + data_name + '_external_' + encoder.lower() + "_image_embeddings_" + encoder_version + ".npy")
-    X_image_ids = np.load(output_path + data_name + "_external_image_ids_" + encoder_version +".npy")
+    X_image_embeddings = np.load(data_path + data_name + '_external_' + encoder.lower() + "_image_embeddings_" + encoder_version + ".npy")
+    X_image_ids = np.load(data_path + data_name + "_external_image_ids_" + encoder_version +".npy")
     X_image_embeddings = pd.DataFrame(X_image_embeddings, index=X_image_ids).T
     X_image_embeddings.columns = X_image_embeddings.columns.astype('str')
 
-    X_text_embeddings = np.load(output_path + data_name + '_external_' + encoder.lower() + "_text_embeddings_" + encoder_version + ".npy")
-    X_text_ids = np.load(output_path + data_name + "_external_text_ids_" + encoder_version +".npy")
+    X_text_embeddings = np.load(data_path + data_name + '_external_' + encoder.lower() + "_text_embeddings_" + encoder_version + ".npy")
+    X_text_ids = np.load(data_path + data_name + "_external_text_ids_" + encoder_version +".npy")
     X_text_embeddings = pd.DataFrame(X_text_embeddings, index=X_text_ids).T
     X_text_embeddings.columns = X_text_embeddings.columns.astype('str')
     
