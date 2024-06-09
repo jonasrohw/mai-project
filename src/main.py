@@ -30,16 +30,16 @@ ensure_directories_exist(*directories_to_check)
 ### Extract CLIP features for NewsCLIPings
 
 # extract_encoder_features(data_path=DATA_PATH, images_path=DATA_PATH+'VisualNews/origin/', data_name=DATA_NAME, output_path=EVIDENCE_PATH)
-load_merge_evidence_data(SOURCE_EVIDENCE_PATH, DATA_PATH, DATA_NAME)
+#load_merge_evidence_data(SOURCE_EVIDENCE_PATH, DATA_PATH, DATA_NAME)
 
 # # ### Extract CLIP features for VERITE
 # # extract_encoder_features(data_path=VERITE_PATH, images_path=VERITE_PATH, data_name='VERITE', output_path=VERITE_PATH)
    
 # # ### Extract CLIP features for the external evidence of NewsCLIPings
-extract_features_for_evidence(data_path = DATA_PATH, output_path= EVIDENCE_PATH, data_name_X=DATA_NAME_X)
+#extract_features_for_evidence(data_path = DATA_PATH, output_path= EVIDENCE_PATH, data_name_X=DATA_NAME_X)
 
 # # ### Evidence re-ranking module for NewsCLIPings
-re_rank_evidence(data_path=DATA_PATH, data_name=DATA_NAME, data_name_X=DATA_NAME_X, output_path=EVIDENCE_PATH)
+#re_rank_evidence(data_path=DATA_PATH, data_name=DATA_NAME, data_name_X=DATA_NAME_X, output_path=EVIDENCE_PATH)
 
 
 
@@ -55,14 +55,14 @@ re_rank_evidence(data_path=DATA_PATH, data_name=DATA_NAME, data_name_X=DATA_NAME
 ## Run experiments for the RED-DOT-Baseline which does not leverage irrelevant evidence
 ## Results are shown in Tables 1 and 2 
 
-# RED_DOT_version = "single_stage_guided"
-# k_fold = 3
-# num_evidence = 1
-# run_experiment(RED_DOT_version = RED_DOT_version, 
-#                 data_path=DATA_PATH,
-#                 evidence_path=EVIDENCE_PATH,
-#                 verite_path=VERITE_PATH,
-#                 use_evidence=num_evidence, 
-#                 use_evidence_neg=num_evidence, 
-#                 k_fold=k_fold, 
-#                 choose_fusion_method = [["concat_1", "add", "sub", "mul"]])
+RED_DOT_version = "single_stage_guided"
+k_fold = 3
+num_evidence = 1
+run_experiment(RED_DOT_version = RED_DOT_version, 
+                data_path=DATA_PATH,
+                evidence_path=EVIDENCE_PATH,
+                verite_path=VERITE_PATH,
+                use_evidence=num_evidence, 
+                use_evidence_neg=num_evidence, 
+                k_fold=k_fold, 
+                choose_fusion_method = [["concat_1", "add", "sub", "mul"]])
