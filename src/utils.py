@@ -844,12 +844,10 @@ def load_ranked_verite(encoder, choose_encoder_version, data_path, label_map={'t
     encoder_version = choose_encoder_version.replace('-', '').replace('/', '')
     
     verite_test = pd.read_csv(data_path + "VERITE_ranked_evidence_" + encoder.lower() + "_" + encoder_version +  ".csv", index_col=0)
-
     verite_test = str_to_list(verite_test, ['captions', 'images_paths', 'img_ranked_items', 'txt_ranked_items'])
     
     verite_test = verite_test.reset_index().rename({'index': 'id', 'label': 'falsified'}, axis=1)
     verite_test['image_id'] = verite_test['id']
-
     verite_text_embeddings = np.load(data_path + "VERITE_" + encoder.lower() + "_text_embeddings_" + encoder_version + ".npy").astype('float32')
     verite_image_embeddings = np.load(data_path + "VERITE_" + encoder.lower() +"_image_embeddings_" + encoder_version + ".npy").astype('float32')
     verite_image_embeddings = pd.DataFrame(verite_image_embeddings, index=verite_test.id.values).T
