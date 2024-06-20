@@ -11,7 +11,7 @@ SOURCE_EVIDENCE_PATH = 'data/news_clippings/queries_dataset/'
 DATA_NAME = 'news_clippings_balanced'
 DATA_NAME_X = 'news_clippings_balanced_external_info'
 
-directories_to_check = [DATA_PATH, VERITE_PATH, EVIDENCE_PATH, SOURCE_EVIDENCE_PATH, DATA_PATH+'VisualNews/origin/']
+directories_to_check = [DATA_PATH, VERITE_PATH, EVIDENCE_PATH]
 ensure_directories_exist(*directories_to_check)
 
 ### The collected evidence are provided. But if you need to re-collect them, uncomment the following:
