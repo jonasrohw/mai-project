@@ -166,3 +166,26 @@ class RED_DOT(nn.Module):
 
                     
         return y_truth, y_relevance
+    
+class CrossAttention(nn.Module):
+    def __init__(self, embed_dim, num_heads, dropout=0.1):
+        super(CrossAttention, self).__init__()
+        self.multihead_attn = nn.MultiheadAttention(embed_dim, num_heads, dropout)
+        self.layernorm1 = nn.LayerNorm(embed_dim)
+        self.layernorm2 = nn.LayerNorm(embed_dim)
+        self.dropout = nn.Dropout(dropout)
+        self.linear1 = nn.Linear(embed_dim, embed_dim)
+        self.linear2 = nn.Linear(embed_dim, embed_dim)
+        self.activation = nn.GELU()
+
+    def forward(self, query, key, value):
+        query = query.transpose(0, 1)
+        key = key.transpose(0, 1)
+        value = value.transpose(0, 1)
+        attn_output, _ = self.multihead_attn(query, key, value)
+        attn_output = self.dropout(attn_output)
+        attn_output = self.layernorm1(query + attn_output)
+        ff_output = self.linear2(self.dropout(self.activation(self.linear1(attn_output))))
+        ff_output = self.dropout(ff_output)
+        ff_output = self.layernorm2(attn_output + ff_output)
+        return ff_output.transpose(0, 1)
