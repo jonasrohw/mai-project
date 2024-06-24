@@ -11,6 +11,8 @@ from ast import literal_eval
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
+from models import CrossAttention
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -355,7 +357,7 @@ def modality_fusion(fusion_method, mod_a, mod_b):
     return x
 
 
-def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None):
+def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None, num_heads=8, dropout=0.1):
     """Prepare input for model
 
     Args:
@@ -371,6 +373,12 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     Returns:
         Tensor: The final fused tensor combining the primary inputs and evidence features.
     """
+
+    device = images.device  # Ensure all tensors are on the same device
+    embed_dim = images.shape[-1]
+    cross_attention_module = CrossAttention(embed_dim=embed_dim, num_heads=num_heads,
+                                            dropout=dropout).to(device) if 'cross_attention' in fusion_method else None
+
     # Check if a fusion method is specified
     if fusion_method:
         # Fuse the images and texts using the specified fusion method
@@ -380,7 +388,15 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     if use_evidence:
         # If X_all is provided, concatenate it with the current fusion result
         if X_all is not None:
-            x = torch.cat([x, X_all], axis=1)
+            X_all = X_all.to(device)
+            all_attentions = []
+            for i in range(X_all.shape[1]):
+                evidence = X_all[:, i, :].unsqueeze(1)
+                attention_output = cross_attention_module(x, evidence, evidence)
+                all_attentions.append(attention_output)
+            x = torch.cat([x] + all_attentions, dim=1)
+            # x = torch.cat([x, X_all], axis=1)
+            print(f'Shape of x after applying cross attention to all evidences: {x.shape}')
             return x
 
         # If fuse_evidence contains more than one method
