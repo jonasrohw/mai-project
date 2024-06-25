@@ -376,8 +376,7 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
 
     device = images.device  # Ensure all tensors are on the same device
     embed_dim = images.shape[-1]
-    cross_attention_module = CrossAttention(embed_dim=embed_dim, num_heads=num_heads,
-                                            dropout=dropout).to(device) if 'cross_attention' in fusion_method else None
+    cross_attention_module = CrossAttention(embed_dim=embed_dim, num_heads=num_heads, dropout=dropout).to(device)
 
     # Check if a fusion method is specified
     if fusion_method:
@@ -389,14 +388,13 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
         # If X_all is provided, concatenate it with the current fusion result
         if X_all is not None:
             X_all = X_all.to(device)
+            x = torch.cat([x, X_all], axis=1)
             all_attentions = []
             for i in range(X_all.shape[1]):
                 evidence = X_all[:, i, :].unsqueeze(1)
                 attention_output = cross_attention_module(x, evidence, evidence)
                 all_attentions.append(attention_output)
             x = torch.cat([x] + all_attentions, dim=1)
-            # x = torch.cat([x, X_all], axis=1)
-            print(f'Shape of x after applying cross attention to all evidences: {x.shape}')
             return x
 
         # If fuse_evidence contains more than one method

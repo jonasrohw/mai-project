@@ -168,7 +168,7 @@ class RED_DOT(nn.Module):
         return y_truth, y_relevance
     
 class CrossAttention(nn.Module):
-    def __init__(self, embed_dim, num_heads, dropout=0.1):
+    def __init__(self, embed_dim, num_heads=8, dropout=0.1):
         super(CrossAttention, self).__init__()
         self.multihead_attn = nn.MultiheadAttention(embed_dim, num_heads, dropout)
         self.layernorm1 = nn.LayerNorm(embed_dim)
