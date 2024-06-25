@@ -98,7 +98,7 @@ def run_experiment(RED_DOT_version,
         final_verite_list = []
         
         if k_fold > 1: 
-            kf = KFold(n_splits=k_fold, shuffle=True)
+            kf = KFold(n_splits=k_fold, shuffle=True, random_state=42)
 
             for fold, (valid_index, test_index) in enumerate(kf.split(verite_test)):    
                 valid_data = verite_test.iloc[valid_index]
