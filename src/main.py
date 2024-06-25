@@ -68,10 +68,10 @@ def main():
                    use_evidence=num_evidence,
                    use_evidence_neg=num_evidence,
                    k_fold=k_fold,
-                   choose_fusion_method=[["concat_1", "add", "sub", "mul", "cross_attention"]])
+                   choose_fusion_method=[["concat_1", "add", "sub", "mul"]])
 
 
 if __name__ == '__main__':
-    # os.chdir('/teamspace/studios/this_studio/mai-project')
+    os.chdir('/teamspace/studios/this_studio/mai-project')
     freeze_support()
     main()
