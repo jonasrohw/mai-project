@@ -14,8 +14,6 @@ SOURCE_EVIDENCE_PATH = 'data/news_clippings/queries_dataset/'
 DATA_NAME = 'news_clippings_balanced'
 DATA_NAME_X = 'news_clippings_balanced_external_info'
 
-directories_to_check = [DATA_PATH, VERITE_PATH, EVIDENCE_PATH]
-ensure_directories_exist(*directories_to_check)
 
 def main():
     directories_to_check = [DATA_PATH, VERITE_PATH, EVIDENCE_PATH]
