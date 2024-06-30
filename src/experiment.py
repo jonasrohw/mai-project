@@ -18,8 +18,12 @@ from utils import (
     load_ranked_verite,
     load_negative_evidence,
     DatasetIterator_negative_Evidence,
-    prepare_dataloader_negative_Evidence
+    prepare_dataloader_negative_Evidence,
+    init_weights
 )
+from transformers import CLIPModel, CLIPTokenizer
+from models import StackedCrossAttention
+from torch.optim.lr_scheduler import ReduceLROnPlateau, CyclicLR
 
 def run_experiment(RED_DOT_version,
                    use_evidence,
@@ -35,12 +39,17 @@ def run_experiment(RED_DOT_version,
                    choose_gpu = 0,
                    epochs=100,
                    seed_options = [0],
-                   lr_options = [1e-4],
+                   lr_options = [1e-4],  #[1e-4],
                    batch_size_options = [512],
                    choose_fusion_method = [["concat_1", "add", "sub", "mul"]],
                    tf_layers_options = [4],
-                   tf_head_options = [2], 
-                   tf_dim_options = [128]
+                   tf_head_options = [2],
+                   tf_dim_options = [128],
+                   num_heads_options = [4],
+                   dropout_options = [0.2],
+                   num_layers_options = [3],
+                   weight_decay = 1e-3,
+                   patience = 10
                   ):
     
     if RED_DOT_version not in ["baseline", "single_stage", "single_stage_guided", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"]:
@@ -62,12 +71,15 @@ def run_experiment(RED_DOT_version,
     token_level = False
     fuse_evidence_options = [["concat_1"]] if use_evidence else [[False]]
     num_workers=8
-    early_stop_epochs = 10
+    early_stop_epochs = 20 #10
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     device = torch.device("cuda:" + str(choose_gpu) if torch.cuda.is_available() else "cpu")
     print(device)
 
+    print('LOAD CLIP MODEL FOR CROSS ATTENTION')
+    #clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14").to(device)
+    
     print("Load VERITE")
     verite_test, verite_image_embeddings, verite_text_embeddings, X_verite_image_embeddings, X_verite_text_embeddings = load_ranked_verite(encoder, encoder_version, verite_path)
 
@@ -87,12 +99,12 @@ def run_experiment(RED_DOT_version,
     valid_data = load_negative_evidence(valid_data, dataset_name, encoder, encoder_version, "valid", evidence_path, use_evidence, use_evidence_neg)
     test_data = load_negative_evidence(test_data, dataset_name, encoder, encoder_version, "test", evidence_path, use_evidence, use_evidence_neg)    
 
-    grid = itertools.product(choose_fusion_method, batch_size_options, lr_options, tf_layers_options, tf_head_options, tf_dim_options, fuse_evidence_options, seed_options)        
+    grid = itertools.product(choose_fusion_method, batch_size_options, lr_options, tf_layers_options, tf_head_options, tf_dim_options, fuse_evidence_options, seed_options, num_heads_options, dropout_options, num_layers_options)
 
     experiment = 0
     for params in grid:
 
-        fusion_method, batch_size, lr, tf_layers, tf_head, tf_dim, fuse_evidence, seed = params
+        fusion_method, batch_size, lr, tf_layers, tf_head, tf_dim, fuse_evidence, seed, num_heads, dropout, num_layers = params
         set_seed(seed)
         valid_data_list = []
         final_verite_list = []
@@ -145,7 +157,11 @@ def run_experiment(RED_DOT_version,
                 "USE_NEG_EVIDENCE": use_evidence_neg,
                 "FUSE_EVIDENCE": fuse_evidence,
                 "k_fold": k_fold,
-                "current_fold": fold                 
+                "current_fold": fold,
+                "NUM_HEADS": num_heads,
+                "DROPOUT": dropout,
+                "CA_NUM_LAYERS": num_layers,
+                "WEIGHT_DECAY": weight_decay
             }
 
             train_dataloader = prepare_dataloader_negative_Evidence(
@@ -244,14 +260,20 @@ def run_experiment(RED_DOT_version,
                 fuse_evidence=fuse_evidence,
             )
 
+            cross_attention_module = StackedCrossAttention(device=device, embed_dim=parameters["EMB_SIZE"], num_heads=parameters["NUM_HEADS"], dropout=parameters["DROPOUT"], num_layers=parameters["CA_NUM_LAYERS"]).to(device)
+            cross_attention_module.apply(init_weights)
+
             model.to(device)
             criterion = nn.BCEWithLogitsLoss()
             criterion_mlb = nn.BCEWithLogitsLoss()
 
             optimizer = torch.optim.Adam(
-                model.parameters(), lr=parameters["LEARNING_RATE"]
+                #model.parameters(), lr=parameters["LEARNING_RATE"]
+                list(model.parameters()) + list(cross_attention_module.parameters()), lr=parameters["LEARNING_RATE"], weight_decay=parameters["WEIGHT_DECAY"]
             )
 
+            #scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=3)
+            scheduler = CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, step_size_up=100, mode='triangular2', cycle_momentum=False)
             batches_per_epoch = train_dataloader.__len__()
 
             history = []
@@ -273,7 +295,11 @@ def run_experiment(RED_DOT_version,
                     criterion,
                     criterion_mlb,
                     device,
-                    batches_per_epoch
+                    batches_per_epoch,
+                    cross_attention_module,
+                    parameters["NUM_HEADS"],
+                    parameters["DROPOUT"],
+                    parameters["CA_NUM_LAYERS"]
                 )
 
                 if k_fold > 1:
@@ -283,7 +309,11 @@ def run_experiment(RED_DOT_version,
                                           use_evidence, 
                                           fuse_evidence, 
                                           device,
-                                          zero_pad=zero_pad
+                                          cross_attention_module,
+                                          parameters["NUM_HEADS"],
+                                          parameters["DROPOUT"],
+                                          parameters["CA_NUM_LAYERS"],
+                                          zero_pad=zero_pad,
                                           )
                 else:
                     results = eval_step(model, 
@@ -293,7 +323,11 @@ def run_experiment(RED_DOT_version,
                                         use_evidence,
                                         fuse_evidence,
                                         epoch, 
-                                        device
+                                        device,
+                                        cross_attention_module,
+                                        parameters["NUM_HEADS"],
+                                        parameters["DROPOUT"],
+                                        parameters["CA_NUM_LAYERS"]
                                     )
 
                 history.append(results)
@@ -307,6 +341,19 @@ def run_experiment(RED_DOT_version,
                     PATH,
                     metrics_list=["true_v_ooc"] if k_fold > 1 else ["Accuracy", "exact_match"] if use_evidence_neg > 0 else ["Accuracy"],
                 )
+
+                # Extract the true_v_ooc metric for the scheduler
+                if k_fold > 1:
+                    metric_to_monitor = results['true_v_ooc']
+                else:
+                    metric_to_monitor = results.get('true_v_ooc', 0)  # Default to 0 if not in results
+
+                # Step the scheduler
+                scheduler.step()
+                 # Print the learning rate
+                current_lr = scheduler.get_last_lr()
+                print(f"Epoch [{epoch+1}/{parameters['EPOCHS']}], Learning Rate: {current_lr}")
+
 
                 if has_not_improved_for >= parameters["EARLY_STOP_EPOCHS"]:
 
@@ -330,8 +377,12 @@ def run_experiment(RED_DOT_version,
                                     fusion_method,
                                     use_evidence,
                                     fuse_evidence,
-                                    -1, 
-                                    device, 
+                                    -1,
+                                    device,
+                                    cross_attention_module,
+                                    parameters["NUM_HEADS"],
+                                    parameters["DROPOUT"],
+                                    parameters["CA_NUM_LAYERS"]
                                     )                
 
             else:
@@ -341,6 +392,10 @@ def run_experiment(RED_DOT_version,
                                       use_evidence, 
                                       fuse_evidence, 
                                       device,
+                                      cross_attention_module,
+                                      parameters["NUM_HEADS"],
+                                      parameters["DROPOUT"],
+                                      parameters["CA_NUM_LAYERS"],
                                       zero_pad=zero_pad
                                       )
 
@@ -351,7 +406,11 @@ def run_experiment(RED_DOT_version,
                                  use_evidence,
                                  fuse_evidence,
                                  -2, 
-                                 device, 
+                                 device,
+                                 cross_attention_module,
+                                 parameters["NUM_HEADS"],
+                                 parameters["DROPOUT"],
+                                 parameters["CA_NUM_LAYERS"]
                                  )
 
             res_verite = eval_verite(model, 
@@ -360,6 +419,10 @@ def run_experiment(RED_DOT_version,
                                      use_evidence, 
                                      fuse_evidence, 
                                      device,
+                                     cross_attention_module,
+                                     parameters["NUM_HEADS"],
+                                     parameters["DROPOUT"],
+                                     parameters["CA_NUM_LAYERS"],
                                      zero_pad=zero_pad
                                      )
 
