@@ -22,6 +22,9 @@ def main():
     ### The collected evidence are provided. But if you need to re-collect them, uncomment the following:
     ### It will require the installation of Google API with 'pip install google-api-python-client'
     # collect_evidence(data_path = VERITE_PATH, API_KEY = "YOUR_KEY", CUSTOM_SEARCH_ENGINE_ID = "YOUR_ID")
+    ### The collected evidence are provided. But if you need to re-collect them, uncomment the following:
+    ### It will require the installation of Google API with 'pip install google-api-python-client'
+    # collect_evidence(data_path = VERITE_PATH, API_KEY = "YOUR_KEY", CUSTOM_SEARCH_ENGINE_ID = "YOUR_ID")
 
     ### Ιf you need to download the VERITE images, uncomment the following:
     # download_images(data_path = VERITE_PATH)
@@ -30,7 +33,9 @@ def main():
     # save_verite_file(data_path = VERITE_PATH)
 
     # RUN ON VM
+    # RUN ON VM
 
+    ### Extract CLIP features for NewsCLIPings
     ### Extract CLIP features for NewsCLIPings
 
     # extract_encoder_features(data_path=DATA_PATH, images_path=DATA_PATH+'VisualNews/origin/', data_name=DATA_NAME, output_path=EVIDENCE_PATH)
