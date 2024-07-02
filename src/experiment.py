@@ -48,8 +48,7 @@ def run_experiment(RED_DOT_version,
                    num_heads_options = [4],
                    dropout_options = [0.2],
                    num_layers_options = [3],
-                   weight_decay = 1e-3,
-                   patience = 10
+                   weight_decay = 1e-3
                   ):
     
     if RED_DOT_version not in ["baseline", "single_stage", "single_stage_guided", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"]:
@@ -71,14 +70,13 @@ def run_experiment(RED_DOT_version,
     token_level = False
     fuse_evidence_options = [["concat_1"]] if use_evidence else [[False]]
     num_workers=8
-    early_stop_epochs = 20 #10
+    
+    # Increased this from 10 to 20 - to make the model learn longer
+    early_stop_epochs = 20
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     device = torch.device("cuda:" + str(choose_gpu) if torch.cuda.is_available() else "cpu")
     print(device)
-
-    print('LOAD CLIP MODEL FOR CROSS ATTENTION')
-    #clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14").to(device)
     
     print("Load VERITE")
     verite_test, verite_image_embeddings, verite_text_embeddings, X_verite_image_embeddings, X_verite_text_embeddings = load_ranked_verite(encoder, encoder_version, verite_path)
@@ -260,19 +258,27 @@ def run_experiment(RED_DOT_version,
                 fuse_evidence=fuse_evidence,
             )
 
+            # Cross attention module
             cross_attention_module = StackedCrossAttention(device=device, embed_dim=parameters["EMB_SIZE"], num_heads=parameters["NUM_HEADS"], dropout=parameters["DROPOUT"], num_layers=parameters["CA_NUM_LAYERS"]).to(device)
+            # apply xaver norm weights to the cross attention module
             cross_attention_module.apply(init_weights)
 
             model.to(device)
             criterion = nn.BCEWithLogitsLoss()
             criterion_mlb = nn.BCEWithLogitsLoss()
 
+            # optimizer for the RED-DOT model and the StackedCrossAttention module
+            # inlcuded weight decay for mitigating overfitting of the red-dot model
             optimizer = torch.optim.Adam(
-                #model.parameters(), lr=parameters["LEARNING_RATE"]
                 list(model.parameters()) + list(cross_attention_module.parameters()), lr=parameters["LEARNING_RATE"], weight_decay=parameters["WEIGHT_DECAY"]
             )
 
-            #scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=3)
+            """
+                learning rate scheduler to mitigate overfitting of the model
+                will start with the LR = 1e-05 and will increase/decrease stepwise the LR up to 1e-03
+                helped the model to learn for longer epochs
+                
+            """
             scheduler = CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, step_size_up=100, mode='triangular2', cycle_momentum=False)
             batches_per_epoch = train_dataloader.__len__()
 
@@ -296,10 +302,7 @@ def run_experiment(RED_DOT_version,
                     criterion_mlb,
                     device,
                     batches_per_epoch,
-                    cross_attention_module,
-                    parameters["NUM_HEADS"],
-                    parameters["DROPOUT"],
-                    parameters["CA_NUM_LAYERS"]
+                    cross_attention_module
                 )
 
                 if k_fold > 1:
@@ -310,9 +313,6 @@ def run_experiment(RED_DOT_version,
                                           fuse_evidence, 
                                           device,
                                           cross_attention_module,
-                                          parameters["NUM_HEADS"],
-                                          parameters["DROPOUT"],
-                                          parameters["CA_NUM_LAYERS"],
                                           zero_pad=zero_pad,
                                           )
                 else:
@@ -324,10 +324,7 @@ def run_experiment(RED_DOT_version,
                                         fuse_evidence,
                                         epoch, 
                                         device,
-                                        cross_attention_module,
-                                        parameters["NUM_HEADS"],
-                                        parameters["DROPOUT"],
-                                        parameters["CA_NUM_LAYERS"]
+                                        cross_attention_module
                                     )
 
                 history.append(results)
@@ -379,10 +376,7 @@ def run_experiment(RED_DOT_version,
                                     fuse_evidence,
                                     -1,
                                     device,
-                                    cross_attention_module,
-                                    parameters["NUM_HEADS"],
-                                    parameters["DROPOUT"],
-                                    parameters["CA_NUM_LAYERS"]
+                                    cross_attention_module
                                     )                
 
             else:
@@ -393,9 +387,6 @@ def run_experiment(RED_DOT_version,
                                       fuse_evidence, 
                                       device,
                                       cross_attention_module,
-                                      parameters["NUM_HEADS"],
-                                      parameters["DROPOUT"],
-                                      parameters["CA_NUM_LAYERS"],
                                       zero_pad=zero_pad
                                       )
 
@@ -407,10 +398,7 @@ def run_experiment(RED_DOT_version,
                                  fuse_evidence,
                                  -2, 
                                  device,
-                                 cross_attention_module,
-                                 parameters["NUM_HEADS"],
-                                 parameters["DROPOUT"],
-                                 parameters["CA_NUM_LAYERS"]
+                                 cross_attention_module
                                  )
 
             res_verite = eval_verite(model, 
@@ -420,9 +408,6 @@ def run_experiment(RED_DOT_version,
                                      fuse_evidence, 
                                      device,
                                      cross_attention_module,
-                                     parameters["NUM_HEADS"],
-                                     parameters["DROPOUT"],
-                                     parameters["CA_NUM_LAYERS"],
                                      zero_pad=zero_pad
                                      )
 
