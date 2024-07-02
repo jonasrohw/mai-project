@@ -167,8 +167,11 @@ class RED_DOT(nn.Module):
 
                     
         return y_truth, y_relevance
-    
 
+
+"""
+    Simple multihead attention model
+"""
 class CrossAttention(nn.Module):
     def __init__(self, device, embed_dim, num_heads=4, dropout=0.2):
         super(CrossAttention, self).__init__()
@@ -196,36 +199,10 @@ class CrossAttention(nn.Module):
         return ff_output.transpose(0, 1)
 
 
-"""
-class CrossAttentionWithCLIP(nn.Module):
-    def __init__(self, model, device, embed_dim, num_heads=4, dropout=0.2):
-        super(CrossAttentionWithCLIP, self).__init__()
-        self.clip_model = model
-        self.device = device
-        self.embed_dim = embed_dim
-        self.num_heads = num_heads
-        # self.embed_dim = self.clip_model.config.projection_dim  # Use projection_dim for CLIP
-        self.multihead_attn = nn.MultiheadAttention(embed_dim=self.embed_dim, num_heads=num_heads, dropout=dropout)
-        self.layernorm1 = nn.LayerNorm(self.embed_dim)
-        self.layernorm2 = nn.LayerNorm(self.embed_dim)
-        self.dropout = nn.Dropout(dropout)
-        self.linear1 = nn.Linear(self.embed_dim, self.embed_dim)
-        self.linear2 = nn.Linear(self.embed_dim, self.embed_dim)
-        self.activation = nn.GELU()
 
-    def forward(self, query, key, value):
-        query = query.transpose(0, 1)
-        key = key.transpose(0, 1)
-        value = value.transpose(0, 1)
-        attn_output, _ = self.multihead_attn(query, key, value)
-        attn_output = self.dropout(attn_output)
-        attn_output = self.layernorm1(query + attn_output)
-        ff_output = self.linear2(self.dropout(self.activation(self.linear1(attn_output))))
-        ff_output = self.dropout(ff_output)
-        ff_output = self.layernorm2(attn_output + ff_output)
-        return ff_output.transpose(0, 1)
 """
-"""
+multihead attention model with more methods implemented for mitigating overfitting
+
 class CrossAttention(nn.Module):
     def __init__(self, device, embed_dim, num_heads=4, dropout=0.2):
         super(CrossAttention, self).__init__()
@@ -261,6 +238,9 @@ class CrossAttention(nn.Module):
         return ff_output.transpose(0, 1)
 """
 
+"""
+    Stacks the multihead attention model for capturing more complex releations of feature/evidences  
+"""
 class StackedCrossAttention(nn.Module):
     def __init__(self, device, embed_dim, num_heads=4, dropout=0.2, num_layers=2):
         super(StackedCrossAttention, self).__init__()
