@@ -6,6 +6,9 @@ import numpy as np
 import utils
 from sklearn.model_selection import KFold
 from models import RED_DOT
+import time
+from tqdm import tqdm
+
 from utils import (
     early_stop,
     train_step,
@@ -147,7 +150,7 @@ def run_experiment(RED_DOT_version,
             model_name = dataset_name + '_multimodal_' + str(seed) + init_model_name
             torch.manual_seed(seed)
 
-            print("*****", seed, dataset_name, encoder, encoder_version, model_name, "*****")
+            #print("*****", seed, dataset_name, encoder, encoder_version, model_name, "*****")
 
             experiment += 1
 
@@ -276,8 +279,8 @@ def run_experiment(RED_DOT_version,
                 fuse_evidence=fuse_evidence
             )
 
-            print("!!!!!!!!!!!!!!!!!!!", experiment, "!!!!!!!!!!!!!!!!!!!")
-            print("!!!!!!!!!!!!!!!!!!!", parameters, "!!!!!!!!!!!!!!!!!!!")
+            #print("!!!!!!!!!!!!!!!!!!!", experiment, "!!!!!!!!!!!!!!!!!!!")
+            #print("!!!!!!!!!!!!!!!!!!!", parameters, "!!!!!!!!!!!!!!!!!!!")
 
             if parameters["ENCODER_VERSION"] == 'ViT-B/32':
                 emb_dim_ = 512
@@ -403,7 +406,6 @@ def run_experiment(RED_DOT_version,
                                     )
 
                 history.append(results)
-
                 has_not_improved_for = early_stop(
                     has_not_improved_for,
                     model,
@@ -515,8 +517,10 @@ def run_experiment(RED_DOT_version,
             if not os.path.isdir("results"):
                 os.mkdir("results")
 
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            
             save_results_csv(
                 "results/",
-                results_filename + "_cvood" if k_fold > 1 else "_idv",            
+                timestamp + results_filename + "_cvood" if k_fold > 1 else "_idv",            
                 all_results,
             )
