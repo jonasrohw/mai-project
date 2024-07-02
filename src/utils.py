@@ -357,7 +357,7 @@ def modality_fusion(fusion_method, mod_a, mod_b):
     return x
 
 
-def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None, cross_attention_module=None, num_heads=8, dropout=0.1, num_layers=2):
+def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None, cross_attention_module=None):
     """Prepare input for model
 
     Args:
@@ -369,7 +369,8 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
         X_images (Tensor): Additional visual evidence features. (Not used)
         X_texts (Tensor): Additional textual evidence features. (Not used)
         X_all (Tensor, optional): Pre-combined evidence features to be concatenated with the fusion result. Defaults to None.
-
+        cross_attention_module (nn.module): model which computes the cross attention
+        
     Returns:
         Tensor: The final fused tensor combining the primary inputs and evidence features.
     """
@@ -384,10 +385,15 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     if fusion_method:
         # Fuse the images and texts using the specified fusion method
         x = modality_fusion(fusion_method, mod_a=images, mod_b=texts)
-    
+
+    """
+        Iterate through all evidences and apply cross attention between fused features x and each evidences
+        Afterwards append the resulting tensor to a list
+        after applying cross attention, concat features x with evidences X_all, 
+        lastly concat the resulting tensor of the cross attention operation to the previously concated tensor
+    """
     # Check if evidence fusion should be used
     if use_evidence:
-        # If X_all is provided, concatenate it with the current fusion result
         if X_all is not None:
             X_all = X_all.to(device)
             all_attentions = []
@@ -465,7 +471,7 @@ def accuracy_CvC(y_true, y_pred, Ca, Cb):
     
     return round(metrics.accuracy_score(y_true_avb, y_pred_avb), 4)
 
-def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_evidence, device, cross_attention_module, num_heads, dropout, num_layers, zero_pad=False, label_map={'true': 0, 'miscaptioned': 1, 'out-of-context': 2}, cur_epoch=-3):
+def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_evidence, device, cross_attention_module, zero_pad=False, label_map={'true': 0, 'miscaptioned': 1, 'out-of-context': 2}, cur_epoch=-3):
     
     print("\nEvaluation on VERITE")
     model.eval()
@@ -541,7 +547,7 @@ def load_verite(data_path, encoder, encoder_version, label_map={'true': 0, 'misc
     return verite_test, verite_image_embeddings, verite_text_embeddings
 
 
-def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, optimizer, criterion, criterion_mlb, device, batches_per_epoch, cross_attention_module, num_heads, dropout, num_layers):
+def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, optimizer, criterion, criterion_mlb, device, batches_per_epoch, cross_attention_module):
     epoch_start_time = time.time()
     
 
@@ -607,7 +613,7 @@ def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fu
         )          
         
 
-def eval_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, device, cross_attention_module, num_heads, dropout, num_layers, calculate_mlb=True, return_results=True):
+def eval_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, device, cross_attention_module, calculate_mlb=True, return_results=True):
     
     if current_epoch >= 0:
         print("\nEvaluation:", end=" -> ")
@@ -901,13 +907,14 @@ def load_ranked_verite(encoder, choose_encoder_version, data_path, label_map={'t
     
     return verite_test, verite_image_embeddings, verite_text_embeddings, X_verite_image_embeddings, X_verite_text_embeddings
 
+# xavier uniform weights initialization for the cross attention module
 def init_weights(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight)
         if m.bias is not None:
             torch.nn.init.constant_(m.bias, 0)
 
-
+# function for checking the gradient values to see if they are vanishing/exploding
 def print_gradients(model):
     for name, param in model.named_parameters():
         if param.grad is not None:
