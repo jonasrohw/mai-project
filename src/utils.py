@@ -10,6 +10,8 @@ from sklearn import metrics
 from ast import literal_eval
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
+from models import StackedCrossAttention
+import torch.nn as nn
 
 def set_seed(seed):
     random.seed(seed)
@@ -355,7 +357,7 @@ def modality_fusion(fusion_method, mod_a, mod_b):
     return x
 
 
-def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None):
+def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None, cross_attention_module=None, num_heads=8, dropout=0.1, num_layers=2):
     """Prepare input for model
 
     Args:
@@ -371,6 +373,13 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     Returns:
         Tensor: The final fused tensor combining the primary inputs and evidence features.
     """
+
+    device = images.device  # Ensure all tensors are on the same device
+    embed_dim = images.shape[-1]
+    # cross_attention_module = CrossAttentionWithCLIP(model=model, device=device, num_heads=num_heads, dropout=dropout).to(device)
+    # cross_attention_module = cross_attention_module = StackedCrossAttention(model=model, device=device, embed_dim=embed_dim, num_heads=num_heads, dropout=dropout, num_layers=num_layers).to(device)
+
+
     # Check if a fusion method is specified
     if fusion_method:
         # Fuse the images and texts using the specified fusion method
@@ -380,10 +389,18 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     if use_evidence:
         # If X_all is provided, concatenate it with the current fusion result
         if X_all is not None:
-            x = torch.cat([x, X_all], axis=1)
+            X_all = X_all.to(device)
+            all_attentions = []
+            for i in range(X_all.shape[1]):
+                evidence = X_all[:, i, :].unsqueeze(1)
+                attention_output = cross_attention_module(x, evidence, evidence)
+                all_attentions.append(attention_output)
+            x = torch.cat([x, X_all], axis=1)   
+            x = torch.cat([x] + all_attentions, dim=1)
             return x
 
-        # If fuse_evidence contains more than one method
+        # Not needed, x_all always not None
+        """
         if len(fuse_evidence) > 1:
             # Fuse images with X_images using the specified evidence fusion method
             img2Ximg = modality_fusion(fuse_evidence, 
@@ -411,6 +428,7 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     
     # Return the final fused result
     return x
+    """
 
 
 def check_C(C, pos):
@@ -447,7 +465,7 @@ def accuracy_CvC(y_true, y_pred, Ca, Cb):
     
     return round(metrics.accuracy_score(y_true_avb, y_pred_avb), 4)
 
-def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_evidence, device, zero_pad=False, label_map={'true': 0, 'miscaptioned': 1, 'out-of-context': 2}, cur_epoch=-3):
+def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_evidence, device, cross_attention_module, num_heads, dropout, num_layers, zero_pad=False, label_map={'true': 0, 'miscaptioned': 1, 'out-of-context': 2}, cur_epoch=-3):
     
     print("\nEvaluation on VERITE")
     model.eval()
@@ -468,13 +486,13 @@ def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_
             texts = torch.tensor(data[1]).to(device, non_blocking=True).unsqueeze(0)
             labels = torch.tensor(data[2]).to(device, non_blocking=True)
             X_all = torch.tensor(data[3]).to(device, non_blocking=True).unsqueeze(0)            
-            x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all)
+            #x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
 
-            if x.shape[1] < total_tokens and zero_pad:
-                pad_zeros = torch.zeros((x.shape[0], total_tokens - x.shape[1], x.shape[-1])).to(device)
-                x = torch.concat([x, pad_zeros], axis=1)
+            # if x.shape[1] < total_tokens and zero_pad:
+            #     pad_zeros = torch.zeros((x.shape[0], total_tokens - x.shape[1], x.shape[-1])).to(device)
+            #     x = torch.concat([x, pad_zeros], axis=1)
 
-            predictions = model(x, inference=True)
+            predictions = model(images, texts, X_all, cross_attention_module, inference=True)
 
             y_pred.append(predictions[0].item())
             y_true.append(labels.item())
@@ -523,8 +541,9 @@ def load_verite(data_path, encoder, encoder_version, label_map={'true': 0, 'misc
     return verite_test, verite_image_embeddings, verite_text_embeddings
 
 
-def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, optimizer, criterion, criterion_mlb, device, batches_per_epoch):
+def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, optimizer, criterion, criterion_mlb, device, batches_per_epoch, cross_attention_module, num_heads, dropout, num_layers):
     epoch_start_time = time.time()
+    
 
     running_loss = 0.0
     running_loss_binary = 0.0
@@ -540,10 +559,10 @@ def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fu
         X_all = data[3].to(device, non_blocking=True)
         X_labels = data[4].to(device, non_blocking=True)
         
-        x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all)
+        #x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
         optimizer.zero_grad()
         
-        outputs = model(x, False, X_labels)
+        outputs = model(images, texts, X_all, cross_attention_module, False, X_labels)
         y_binary = outputs[0]
         y_relevance = outputs[1]
         
@@ -562,6 +581,20 @@ def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fu
             running_loss_mlb += loss_mlb.item()   
                     
         loss.backward()
+
+        # Print gradient norms before clipping
+        """
+        print("Before clipping gradients:")
+        print_gradients(model)
+
+        # Optional: Apply gradient clipping
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        
+        # Print gradient norms after clipping
+        print("After clipping gradients:")
+        print_gradients(model)
+        """
+        
         optimizer.step()
 
         running_loss += loss.item()
@@ -574,7 +607,7 @@ def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fu
         )          
         
 
-def eval_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, device, calculate_mlb=True, return_results=True):
+def eval_step(model, input_dataloader, encoder, fusion_method, use_evidence, fuse_evidence, current_epoch, device, cross_attention_module, num_heads, dropout, num_layers, calculate_mlb=True, return_results=True):
     
     if current_epoch >= 0:
         print("\nEvaluation:", end=" -> ")
@@ -601,8 +634,8 @@ def eval_step(model, input_dataloader, encoder, fusion_method, use_evidence, fus
             X_all = data[3].to(device, non_blocking=True)            
             X_labels = data[4].to(device, non_blocking=True)            
 
-            x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all)
-            predictions = model(x, False, X_labels)
+            #x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
+            predictions = model(images, texts, X_all, cross_attention_module, False, X_labels)
             
             y_pred.extend(predictions[0].cpu().detach().numpy())
             y_true.extend(labels.cpu().detach().numpy())
@@ -868,3 +901,43 @@ def load_ranked_verite(encoder, choose_encoder_version, data_path, label_map={'t
     
     return verite_test, verite_image_embeddings, verite_text_embeddings, X_verite_image_embeddings, X_verite_text_embeddings
 
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        torch.nn.init.xavier_uniform_(m.weight)
+        if m.bias is not None:
+            torch.nn.init.constant_(m.bias, 0)
+
+
+def print_gradients(model):
+    for name, param in model.named_parameters():
+        if param.grad is not None:
+            print(f'{name}: {param.grad.norm().item()}')
+
+# =======================================
+#dynamic fusion
+# =======================================
+exp_id = 1
+output_size = 36
+lr_halflife = 50000
+
+# =======================================
+# model parameters
+# =======================================
+iteration   = 2
+
+# image
+output_features             = 768
+hidden_features             = 768
+spatial_features            = 5
+interIntraBlocks_dropout    = 0.1
+num_inter_head              = 8
+num_intra_head              = 8
+num_block                   = 2
+spa_block                   = 2
+que_block                   = 2
+visual_normalization        = True
+
+# text
+text_features           = 768
+embedding_features      = 300
+embedding_dropout       = 0.1
