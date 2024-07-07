@@ -395,15 +395,19 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     # Check if evidence fusion should be used
     if use_evidence:
         if X_all is not None:
-            X_all = X_all.to(device)
-            all_attentions = []
-            for i in range(X_all.shape[1]):
-                evidence = X_all[:, i, :].unsqueeze(1)
-                attention_output = cross_attention_module(x, evidence, evidence)
-                all_attentions.append(attention_output)
-            x = torch.cat([x, X_all], axis=1)   
-            x = torch.cat([x] + all_attentions, dim=1)
-            return x
+            if cross_attention_module is not None:
+                X_all = X_all.to(device)
+                all_attentions = []
+                for i in range(X_all.shape[1]):
+                    evidence = X_all[:, i, :].unsqueeze(1)
+                    attention_output = cross_attention_module(x, evidence, evidence)
+                    all_attentions.append(attention_output)
+                x = torch.cat([x, X_all], axis=1)   
+                x = torch.cat([x] + all_attentions, dim=1)
+            else:
+                x = torch.cat([x, X_all], axis=1)
+        return x
+        
 
         # Not needed, x_all always not None
         """
