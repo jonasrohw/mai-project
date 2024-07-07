@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import clip
 
 class TokenClassifier(nn.Module):
     def __init__(self, input_size, hidden_size, dropout_prob=0.1):
@@ -166,3 +167,86 @@ class RED_DOT(nn.Module):
 
                     
         return y_truth, y_relevance
+
+
+"""
+    Simple multihead attention model
+"""
+class CrossAttention(nn.Module):
+    def __init__(self, device, embed_dim, num_heads=4, dropout=0.2):
+        super(CrossAttention, self).__init__()
+        self.device = device
+        self.num_heads = num_heads
+        self.embed_dim = embed_dim
+        self.multihead_attn = nn.MultiheadAttention(embed_dim=self.embed_dim, num_heads=num_heads, dropout=dropout)
+        self.layernorm1 = nn.LayerNorm(self.embed_dim)
+        self.layernorm2 = nn.LayerNorm(self.embed_dim)
+        self.dropout = nn.Dropout(dropout)
+        self.linear1 = nn.Linear(self.embed_dim, self.embed_dim)
+        self.linear2 = nn.Linear(self.embed_dim, self.embed_dim)
+        self.activation = nn.GELU()
+
+    def forward(self, query, key, value):
+        query = query.transpose(0, 1)
+        key = key.transpose(0, 1)
+        value = value.transpose(0, 1)
+        attn_output, _ = self.multihead_attn(query, key, value)
+        attn_output = self.dropout(attn_output)
+        attn_output = self.layernorm1(query + attn_output)
+        ff_output = self.linear2(self.dropout(self.activation(self.linear1(attn_output))))
+        ff_output = self.dropout(ff_output)
+        ff_output = self.layernorm2(attn_output + ff_output)
+        return ff_output.transpose(0, 1)
+
+
+
+"""
+multihead attention model with more methods implemented for mitigating overfitting
+
+class CrossAttention(nn.Module):
+    def __init__(self, device, embed_dim, num_heads=4, dropout=0.2):
+        super(CrossAttention, self).__init__()
+        self.device = device
+        self.num_heads = num_heads
+        self.embed_dim = embed_dim
+        self.multihead_attn = nn.MultiheadAttention(embed_dim=self.embed_dim, num_heads=num_heads, dropout=dropout)
+        self.layernorm1 = nn.LayerNorm(self.embed_dim)
+        self.layernorm2 = nn.LayerNorm(self.embed_dim)
+        self.batchnorm1 = nn.BatchNorm1d(self.embed_dim)
+        self.batchnorm2 = nn.BatchNorm1d(self.embed_dim)
+        self.dropout = nn.Dropout(dropout)
+        self.linear1 = nn.Linear(self.embed_dim, self.embed_dim)
+        self.linear2 = nn.Linear(self.embed_dim, self.embed_dim)
+        self.activation = nn.GELU()
+
+    def forward(self, query, key, value):
+        query = query.transpose(0, 1)
+        key = key.transpose(0, 1)
+        value = value.transpose(0, 1)
+        attn_output, _ = self.multihead_attn(query, key, value)
+        attn_output = self.dropout(attn_output)
+        attn_output = self.layernorm1(query + attn_output)
+        attn_output = attn_output.transpose(1, 2)  # Change to (batch_size, embed_dim, sequence_length) for BatchNorm1d
+        attn_output = self.batchnorm1(attn_output)
+        attn_output = attn_output.transpose(1, 2)  # Change back to (sequence_length, batch_size, embed_dim)
+        ff_output = self.linear2(self.dropout(self.activation(self.linear1(attn_output))))
+        ff_output = self.dropout(ff_output)
+        ff_output = self.layernorm2(attn_output + ff_output)
+        ff_output = ff_output.transpose(1, 2)  # Change to (batch_size, embed_dim, sequence_length) for BatchNorm1d
+        ff_output = self.batchnorm2(ff_output)
+        ff_output = ff_output.transpose(1, 2)  # Change back to (sequence_length, batch_size, embed_dim)
+        return ff_output.transpose(0, 1)
+"""
+
+"""
+    Stacks the multihead attention model for capturing more complex releations of feature/evidences  
+"""
+class StackedCrossAttention(nn.Module):
+    def __init__(self, device, embed_dim, num_heads=4, dropout=0.2, num_layers=2):
+        super(StackedCrossAttention, self).__init__()
+        self.layers = nn.ModuleList([CrossAttention(device, embed_dim, num_heads, dropout) for _ in range(num_layers)])
+    
+    def forward(self, query, key, value):
+        for layer in self.layers:
+            query = layer(query, key, value)
+        return query
