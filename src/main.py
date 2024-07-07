@@ -61,7 +61,7 @@ def main():
     ## Run experiments for the RED-DOT-Baseline which does not leverage irrelevant evidence
     ## Results are shown in Tables 1 and 2
 
-    RED_DOT_version = "single_stage_guided"
+    RED_DOT_version = "single_stage_guided_dynamic_attention"
     k_fold = 3
     num_evidence = 1
     run_experiment(RED_DOT_version=RED_DOT_version,

@@ -414,7 +414,7 @@ def run_experiment(RED_DOT_version,
                     metrics_list=["true_v_ooc"] if k_fold > 1 else ["Accuracy", "exact_match"] if use_evidence_neg > 0 else ["Accuracy"],
                 )
 
-                if RED_DOT_version == "single_stage_guided_cross_attention" or "single_stage_guided_dynamic_attention":
+                if RED_DOT_version == "single_stage_guided_cross_attention" or RED_DOT_version =="single_stage_guided_dynamic_attention":
                 # Step the scheduler
                     scheduler.step()
                     # Print the learning rate
