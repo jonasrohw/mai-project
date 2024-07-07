@@ -503,9 +503,9 @@ def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_
                     x = torch.concat([x, pad_zeros], axis=1)
 
             if model.model_version == "single_stage_guided_dynamic_fusion":
-                predictions = model(x, inference=True)
-            else:
                 predictions = model(images, texts, X_all, cross_attention_module, inference=True)
+            else:
+                predictions = model(x, inference=True)
 
             y_pred.append(predictions[0].item())
             y_true.append(labels.item())

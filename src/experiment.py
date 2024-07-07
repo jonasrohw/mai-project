@@ -201,11 +201,7 @@ def run_experiment(RED_DOT_version,
                     "USE_NEG_EVIDENCE": use_evidence_neg,
                     "FUSE_EVIDENCE": fuse_evidence,
                     "k_fold": k_fold,
-                    "current_fold": fold,
-                    "NUM_HEADS": num_heads,
-                    "DROPOUT": dropout,
-                    "CA_NUM_LAYERS": num_layers,
-                    "WEIGHT_DECAY": weight_decay
+                    "current_fold": fold
             }
 
             train_dataloader = prepare_dataloader_negative_Evidence(
@@ -372,10 +368,10 @@ def run_experiment(RED_DOT_version,
                     criterion_mlb,
                     device,
                     batches_per_epoch,
-                    cross_attention_module if RED_DOT_version == "single_stage_guided_cross_attention" else None
-                    parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                    parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                    parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
+                    cross_attention_module if RED_DOT_version == "single_stage_guided_cross_attention" else None,
+                    #parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                    #parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                    #parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
                 )
 
                 if k_fold > 1:
@@ -386,9 +382,9 @@ def run_experiment(RED_DOT_version,
                                           fuse_evidence, 
                                           device,
                                           cross_attention_module if RED_DOT_version == "single_stage_guided_cross_attention" else None,
-                                          parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                          parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                          parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                          #parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                          #parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                          #parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
                                           zero_pad=zero_pad,
                                           )
                 else:
@@ -401,9 +397,9 @@ def run_experiment(RED_DOT_version,
                                         epoch, 
                                         device,
                                         cross_attention_module,
-                                        parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                        parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                        parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
+                                        #parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                        #parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                        #parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
                                     )
 
                 history.append(results)
@@ -451,9 +447,9 @@ def run_experiment(RED_DOT_version,
                                     -1,
                                     device,
                                     cross_attention_module if RED_DOT_version == "single_stage_guided_cross_attention" else None
-                                    parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                    parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                    parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
+                                    #parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                    #parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                    #parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
                                     )                
 
             else:
@@ -464,9 +460,9 @@ def run_experiment(RED_DOT_version,
                                       fuse_evidence, 
                                       device,
                                       cross_attention_module if RED_DOT_version == "single_stage_guided_cross_attention" else None,
-                                      parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                      parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                      parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
+                                      #parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                      #parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                      #parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
                                       zero_pad=zero_pad
                                       )
 
@@ -479,9 +475,9 @@ def run_experiment(RED_DOT_version,
                                  -2, 
                                  device,
                                  cross_attention_module if RED_DOT_version == "single_stage_guided_cross_attention" else None
-                                 parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                 parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                 parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
+                                 #parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                 #parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                 #parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None
                                  )
 
             res_verite = eval_verite(model, 
@@ -491,9 +487,9 @@ def run_experiment(RED_DOT_version,
                                      fuse_evidence, 
                                      device,
                                      cross_attention_module if RED_DOT_version == "single_stage_guided_cross_attention" else None,
-                                     parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                     parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
-                                     parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                     #parameters["NUM_HEADS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                     #parameters["DROPOUT"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
+                                     #parameters["CA_NUM_LAYERS"] if RED_DOT_version == "single_stage_guided_dynamic_attention" else None,
                                      zero_pad=zero_pad
                                      )
 
