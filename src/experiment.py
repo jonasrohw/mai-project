@@ -54,11 +54,11 @@ def run_experiment(RED_DOT_version,
                    patience = 10
                   ):
     
-    if RED_DOT_version not in ["baseline", "single_stage", "single_stage_guided","single_stage_guided_cross_attention","single_stage_guided_dynamic_attention", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"]:
+    if RED_DOT_version not in ["baseline", "single_stage", "single_stage_guided","single_stage_guided_cross_attention","single_stage_guided_dynamic_attention", "single_stage_guided_basic_evidence", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"]:
         
         raise Exception("Choose one of the available models: baseline, single_stage, single_stage_guided, dual_stage, dual_stage_guided, dual_stage_two_transformers")
         
-    if RED_DOT_version in ["single_stage", "single_stage_guided", "single_stage_guided_cross_attention","single_stage_guided_dynamic_attention", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"] and use_evidence_neg <= 0:
+    if RED_DOT_version in ["single_stage", "single_stage_guided", "single_stage_guided_cross_attention","single_stage_guided_dynamic_attention", "single_stage_guided_cross_attention", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"] and use_evidence_neg <= 0:
          raise Exception("RED-DOT methods, with the exception of Baseline, must have >0 negative evidence! ")
 
     if RED_DOT_version == "baseline" and use_evidence_neg > 0:
@@ -215,7 +215,7 @@ def run_experiment(RED_DOT_version,
                 parameters["USE_NEG_EVIDENCE"],   
                 fuse_evidence,
                 parameters["NUM_WORKERS"],
-                True,
+                True if RED_DOT_version != "single_stage_guided_basic_evidence" else False,
                 True
             )
 

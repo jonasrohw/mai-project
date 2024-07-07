@@ -357,7 +357,7 @@ def modality_fusion(fusion_method, mod_a, mod_b):
     return x
 
 
-def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None, cross_attention_module=None,num_heads=8, dropout=0.1, num_layers=2):
+def prepare_input(model_version,fusion_method, fuse_evidence, use_evidence, images, texts, X_images, X_texts, X_all=None, cross_attention_module=None,num_heads=8, dropout=0.1, num_layers=2):
     """Prepare input for model
 
     Args:
@@ -395,7 +395,18 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     # Check if evidence fusion should be used
     if use_evidence:
         if X_all is not None:
-            if cross_attention_module is not None:
+            if model_version == "single_stage_guided_basic_fusion":
+                if X_all.size(dim=1) % 2 == 0:
+                    results = []
+                    for i in range(0, X_all.size(dim=1), 2):
+                        x1, x2 = X_all[:, i, :], X_all[:, i + 1, :]
+                        result = modality_fusion(fusion_method, x1, x2) 
+                        results.append(result)
+                    X_all_fused = torch.cat(results, axis=1)
+                    x = torch.cat([x, X_all_fused], axis=1)
+                else:
+                    x = torch.cat([x, X_all], axis=1)
+            elif cross_attention_module is not None:
                 X_all = X_all.to(device)
                 all_attentions = []
                 for i in range(X_all.shape[1]):
@@ -439,7 +450,6 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
     # Return the final fused result
     return x
     """
-
 
 def check_C(C, pos):
     
@@ -497,7 +507,7 @@ def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_
             labels = torch.tensor(data[2]).to(device, non_blocking=True)
             X_all = torch.tensor(data[3]).to(device, non_blocking=True).unsqueeze(0)            
             if model.model_version != "single_stage_guided_dynamic_fusion":
-                x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
+                x = prepare_input(model.model_version, fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
                 if x.shape[1] < total_tokens and zero_pad:
                     pad_zeros = torch.zeros((x.shape[0], total_tokens - x.shape[1], x.shape[-1])).to(device)
                     x = torch.concat([x, pad_zeros], axis=1)
@@ -573,7 +583,7 @@ def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fu
         X_labels = data[4].to(device, non_blocking=True)
         
         if model.model_version != "single_stage_guided_dynamic_fusion":
-            x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
+            x = prepare_input(model.model_version, fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
         optimizer.zero_grad()
         
         if model.model_version == "single_stage_guided_dynamic_fusion":
@@ -655,7 +665,7 @@ def eval_step(model, input_dataloader, encoder, fusion_method, use_evidence, fus
 
 
             if model.model_version != "singe_stage_guided_dynamic_attention":
-                x = prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
+                x = prepare_input(model.model_version, fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
                 predictions = model(x, False, X_labels)
             else:
                 predictions = model(images, texts, X_all, cross_attention_module, False, X_labels)
