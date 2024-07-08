@@ -71,6 +71,7 @@ def main():
                    use_evidence=num_evidence,
                    use_evidence_neg=num_evidence,
                    k_fold=k_fold,
+                   batch_size_options = [256] if RED_DOT_version == "single_stage_guided_dynamic_attention" else [512],
                    choose_fusion_method=[["concat_1", "add", "sub", "mul"]])
 
 

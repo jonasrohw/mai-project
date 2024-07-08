@@ -506,13 +506,13 @@ def eval_verite(model, verite_data_generator, fusion_method, use_evidence, fuse_
             texts = torch.tensor(data[1]).to(device, non_blocking=True).unsqueeze(0)
             labels = torch.tensor(data[2]).to(device, non_blocking=True)
             X_all = torch.tensor(data[3]).to(device, non_blocking=True).unsqueeze(0)            
-            if model.model_version != "single_stage_guided_dynamic_fusion":
+            if model.model_version != "single_stage_guided_dynamic_attention":
                 x = prepare_input(model.model_version, fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
                 if x.shape[1] < total_tokens and zero_pad:
                     pad_zeros = torch.zeros((x.shape[0], total_tokens - x.shape[1], x.shape[-1])).to(device)
                     x = torch.concat([x, pad_zeros], axis=1)
 
-            if model.model_version == "single_stage_guided_dynamic_fusion":
+            if model.model_version == "single_stage_guided_dynamic_attention":
                 predictions = model(images, texts, X_all, cross_attention_module, inference=True)
             else:
                 predictions = model(x, inference=True)
@@ -582,11 +582,11 @@ def train_step(model, input_dataloader, encoder, fusion_method, use_evidence, fu
         X_all = data[3].to(device, non_blocking=True)
         X_labels = data[4].to(device, non_blocking=True)
         
-        if model.model_version != "single_stage_guided_dynamic_fusion":
+        if model.model_version != "single_stage_guided_dynamic_attention":
             x = prepare_input(model.model_version, fusion_method, fuse_evidence, use_evidence, images, texts, None, None, X_all, cross_attention_module)
         optimizer.zero_grad()
         
-        if model.model_version == "single_stage_guided_dynamic_fusion":
+        if model.model_version == "single_stage_guided_dynamic_attention":
             outputs = model(images, texts, X_all, cross_attention_module, False, X_labels)
         else: 
             outputs = model(x, False, X_labels)
