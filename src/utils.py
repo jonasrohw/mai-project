@@ -377,6 +377,7 @@ def prepare_input(model_version,fusion_method, fuse_evidence, use_evidence, imag
 
     device = images.device  # Ensure all tensors are on the same device
     embed_dim = images.shape[-1]
+
     # cross_attention_module = CrossAttentionWithCLIP(model=model, device=device, num_heads=num_heads, dropout=dropout).to(device)
     # cross_attention_module = cross_attention_module = StackedCrossAttention(model=model, device=device, embed_dim=embed_dim, num_heads=num_heads, dropout=dropout, num_layers=num_layers).to(device)
 
@@ -420,8 +421,8 @@ def prepare_input(model_version,fusion_method, fuse_evidence, use_evidence, imag
         return x
         
 
-        # Not needed, x_all always not None
-        """
+    # Not needed, x_all always not None
+    """
         if len(fuse_evidence) > 1:
             # Fuse images with X_images using the specified evidence fusion method
             img2Ximg = modality_fusion(fuse_evidence, 
@@ -446,11 +447,10 @@ def prepare_input(model_version,fusion_method, fuse_evidence, use_evidence, imag
         else:
             # If no fusion method is specified, fuse X_images and X_texts using the evidence fusion method
             x = modality_fusion(fuse_evidence, mod_a=X_images, mod_b=X_texts)
-    
+        
     # Return the final fused result
     return x
     """
-
 def check_C(C, pos):
     
     if C == 0:

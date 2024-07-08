@@ -208,18 +208,18 @@ def run_experiment(RED_DOT_version,
             }
 
             train_dataloader = prepare_dataloader_negative_Evidence(
-                image_embeddings,
-                text_embeddings,
-                X_image_embeddings, 
-                X_text_embeddings,
-                train_data,
-                parameters["BATCH_SIZE"],
-                parameters["USE_EVIDENCE"],  
-                parameters["USE_NEG_EVIDENCE"],   
-                fuse_evidence,
-                parameters["NUM_WORKERS"],
-                True if RED_DOT_version != "single_stage_guided_basic_evidence" else False,
-                True
+                image_embeddings=image_embeddings,
+                text_embeddings=text_embeddings,
+                X_image_embeddings=X_image_embeddings,
+                X_text_embeddings=X_text_embeddings,
+                input_data=train_data,
+                batch_size=parameters["BATCH_SIZE"],
+                use_evidence=parameters["USE_EVIDENCE"],
+                use_evidence_neg=parameters["USE_NEG_EVIDENCE"],
+                fuse_evidence=fuse_evidence,
+                num_workers=parameters["NUM_WORKERS"],
+                shuffle=True if RED_DOT_version != "single_stage_guided_basic_evidence" else False,
+                random_permute=True
             )
 
             if k_fold == 1:
