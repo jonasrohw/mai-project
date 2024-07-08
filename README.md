@@ -9,7 +9,7 @@ Orignal Implementation: https://github.com/stevejpapad/relevant-evidence-detecti
 - Clone this repo: 
 ```
 git clone https://github.com/jonasrohw/mai-project
-cd relevant-evidence-detection
+cd mai-project
 python src/main.py
 ```
 
