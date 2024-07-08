@@ -160,7 +160,7 @@ def run_experiment(RED_DOT_version,
                 fuse_evidence,
                 parameters["NUM_WORKERS"],
                 True,
-                True
+                False
             )
 
             if k_fold == 1:
@@ -221,6 +221,7 @@ def run_experiment(RED_DOT_version,
             )
 
             print("!!!!!!!!!!!!!!!!!!!", experiment, "!!!!!!!!!!!!!!!!!!!")
+            
             print("!!!!!!!!!!!!!!!!!!!", parameters, "!!!!!!!!!!!!!!!!!!!")
 
             if parameters["ENCODER_VERSION"] == 'ViT-B/32':
