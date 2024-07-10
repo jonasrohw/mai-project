@@ -33,21 +33,18 @@ def main():
     # save_verite_file(data_path = VERITE_PATH)
 
     # RUN ON VM
-    # RUN ON VM
 
     ### Extract CLIP features for NewsCLIPings
-    ### Extract CLIP features for NewsCLIPings
-
     # extract_encoder_features(data_path=DATA_PATH, images_path=DATA_PATH+'VisualNews/origin/', data_name=DATA_NAME, output_path=EVIDENCE_PATH)
     # load_merge_evidence_data(SOURCE_EVIDENCE_PATH, DATA_PATH, DATA_NAME)
 
-    # # ### Extract CLIP features for VERITE
+    ### Extract CLIP features for VERITE
     # # extract_encoder_features(data_path=VERITE_PATH, images_path=VERITE_PATH, data_name='VERITE', output_path=VERITE_PATH)
 
-    # # ### Extract CLIP features for the external evidence of NewsCLIPings
+    ### Extract CLIP features for the external evidence of NewsCLIPings
     # extract_features_for_evidence(data_path = DATA_PATH, output_path= EVIDENCE_PATH, data_name_X=DATA_NAME_X)
 
-    # # ### Evidence re-ranking module for NewsCLIPings
+    ### Evidence re-ranking module for NewsCLIPings
     # re_rank_evidence(data_path=DATA_PATH, data_name=DATA_NAME, data_name_X=DATA_NAME_X, output_path=EVIDENCE_PATH)
 
     # END RUN
@@ -60,7 +57,7 @@ def main():
 
     ## Run experiments for the RED-DOT-Baseline which does not leverage irrelevant evidence
     ## Results are shown in Tables 1 and 2
-
+    
     RED_DOT_version = "single_stage_guided_dynamic_attention"
     k_fold = 3
     num_evidence = 1
@@ -76,6 +73,7 @@ def main():
 
 
 if __name__ == '__main__':
+    # makes running / debugging the code work on lighning Ai
     os.chdir('/teamspace/studios/this_studio/mai-project')
     freeze_support()
     main()
