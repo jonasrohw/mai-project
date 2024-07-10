@@ -3,6 +3,12 @@ import torch.nn as nn
 import clip
 
 class TokenClassifier(nn.Module):
+    """
+    TokenClassifier model used for classifying individual tokens.
+
+    This model uses layer normalization, GELU activation, dropout,
+    and linear layers to perform classification on input tokens.
+    """
     def __init__(self, input_size, hidden_size, dropout_prob=0.1):
         super(TokenClassifier, self).__init__()
         
@@ -24,6 +30,13 @@ class TokenClassifier(nn.Module):
         return x
     
 class RED_DOT(nn.Module):
+    """
+    RED_DOT model, a transformer-based model for binary classification and relevance scoring
+    using multiple evidence sources.
+
+    This model integrates various components such as token classification, evidence handling,
+    and multi-layer transformer encoders to achieve its objectives.
+    """
     def __init__(
         self,
         device,
@@ -169,10 +182,13 @@ class RED_DOT(nn.Module):
         return y_truth, y_relevance
 
 
-"""
-    Simple multihead attention model
-"""
 class CrossAttention(nn.Module):
+    """
+    CrossAttention model using multi-head attention mechanism.
+
+    This model includes layer normalization, dropout, and linear layers to process the
+    input query, key, and value tensors using multi-head attention.
+    """
     def __init__(self, device, embed_dim, num_heads=4, dropout=0.2):
         super(CrossAttention, self).__init__()
         self.device = device
@@ -238,10 +254,14 @@ class CrossAttention(nn.Module):
         return ff_output.transpose(0, 1)
 """
 
-"""
-    Stacks the multihead attention model for capturing more complex releations of feature/evidences  
-"""
+
 class StackedCrossAttention(nn.Module):
+    """
+    StackedCrossAttention model for capturing complex relationships using multiple CrossAttention layers.
+
+    This model stacks several CrossAttention layers to process input query, key, and value tensors
+    through multiple layers of multi-head attention.
+    """
     def __init__(self, device, embed_dim, num_heads=4, dropout=0.2, num_layers=2):
         super(StackedCrossAttention, self).__init__()
         self.layers = nn.ModuleList([CrossAttention(device, embed_dim, num_heads, dropout) for _ in range(num_layers)])
