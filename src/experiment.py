@@ -56,6 +56,12 @@ def run_experiment(RED_DOT_version,
                    weight_decay = 1e-3,
                    patience = 10
                   ):
+    """
+    Runs an experiment with the specified configuration.
+    
+    This function handles the setup, training, and evaluation of the RED-DOT model variants. It supports various configurations
+    such as single-stage and dual-stage models, with or without guided attention and evidence fusion.
+    """
     
     if RED_DOT_version not in ["baseline", "single_stage", "single_stage_guided","single_stage_guided_cross_attention","single_stage_guided_dynamic_attention", "single_stage_guided_basic_evidence", "dual_stage", "dual_stage_guided", "dual_stage_two_transformers"]:
         
@@ -328,7 +334,7 @@ def run_experiment(RED_DOT_version,
 
             if RED_DOT_version == "single_stage_guided_cross_attention" or RED_DOT_version == "single_stage_guided_dynamic_attention":
                 # optimizer for the RED-DOT model and the StackedCrossAttention module
-                # inlcuded weight decay for mitigating overfitting of the red-dot model
+                # included weight decay for mitigating overfitting of the red-dot model
                 optimizer = torch.optim.Adam(
                     list(model.parameters()) + list(cross_attention_module.parameters()), lr=parameters["LEARNING_RATE"], weight_decay=parameters["WEIGHT_DECAY"]
                 )
@@ -336,8 +342,6 @@ def run_experiment(RED_DOT_version,
                 """
                     learning rate scheduler to mitigate overfitting of the model
                     will start with the LR = 1e-05 and will increase/decrease stepwise the LR up to 1e-03
-                    helped the model to learn for longer epochs
-                    
                 """
             else:
                 optimizer = torch.optim.Adam(
