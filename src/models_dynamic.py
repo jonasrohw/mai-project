@@ -5,6 +5,20 @@ import utils
 import math
 import torch.nn.functional as F
 from models import CrossAttention
+
+"""
+Implementation of Dynamic Fusion block based on the paper 
+"Dynamic Fusion with Intra- and Inter-modality Attention Flow for Visual Question Answering"
+(Link: https://arxiv.org/pdf/1812.05252)
+Using Inter Modality Attention Flow and Dynamic Intra Modality Attention Flow blocks to 
+produce fused embeddings, with more information, from the input claim text and image than compared to 
+that achieved through basic fusion methods. 
+Input embeddings of the claim image and text pair passed through the stacked blocks of InterModalityUpdate and DyIntraModalityUpdate
+and then followed by linear layer to produce final feature embedding for input to RED-DOT module. 
+RelationModule implemented but not used in current experiments for future investigation 
+in effect of q-network adaptation to the Dynamic Fusion architecture.
+"""
+
 class SingleBlock(nn.Module):
     """
     Single Block Inter-/Intra-modality stack multiple times
