@@ -381,6 +381,24 @@ def prepare_input(fusion_method, fuse_evidence, use_evidence, images, texts, X_i
         # If X_all is provided, concatenate it with the current fusion result
         if X_all is not None:
             x = torch.cat([x, X_all], axis=1)
+
+
+            """
+            use this for symetric fusion instead
+            this fuses all image-text pairs in the evidence similar to the claim
+            if X_all.size(dim=1) % 2 == 0:
+                results = []
+                for i in range(0, X_all.size(dim=1), 2):
+                    x1, x2 = X_all[:, i, :], X_all[:, i + 1, :]
+                    result = modality_fusion(fusion_method, x1, x2)
+                    results.append(result)
+                X_all_fused = torch.cat(results, axis=1)
+    
+                x = torch.cat([x, X_all_fused], axis=1)
+            else:
+                x = torch.cat([x, X_all], axis=1)
+            """
+
             return x
 
         # If fuse_evidence contains more than one method

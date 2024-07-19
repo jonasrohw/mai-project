@@ -177,7 +177,7 @@ def run_experiment(RED_DOT_version,
                     fuse_evidence,
                     parameters["NUM_WORKERS"],
                     False,
-                    False,
+                    False, #disabled for reliable evidence fusion
                 )
 
             else:  
